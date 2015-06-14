@@ -1,31 +1,46 @@
 ###1.创建用户
 
 1)通过CREATE USER创建
+
 语法：CREATE USER 'user'@'host' IDENTIFIED BY 'pass';
 
 user为要创建的用户
+
 @'host' user访问数据库的ip，可以填写以下参数
+
     localhost 本机，即 mysql服务器
+
     IP地址 用户访问mysql机器的ip
+
     %       授权该用户可通过任意ip访问mysql
+
 IDENTIFIED BY 'pass' 用户设置用户密码，如不设置 则无须密码即可访问
 
 例子：
+
 msyql>CREATE USER 'zaifeng'@'localhost' IDENTIFIED BY '123456';
+
 2)直接向mysql.user表里插入数据
+
 语法：insert into user (host,user,password) values ('localhost','zhangsan',password('123456'));
 
 ###2.DB授权与收回
-1)授权
-语法：GRANT rights ON db.table TO user@ip_address IDENTIFIED BY 'pass' WITH GRANT OPTION ;
-rights:select,insert,update,delete,create,drop,index,alter,grant,references,reload,shutdown,process,file等14个权限
 
-db.table 授权用户可以访问的数据库及表，例如db.*,*.*
-IDENTIFIED BY :设定访问密码
-WITH GRANT OPTION: 带授权，即，可以将rights再授予其他用户
+1)授权
+
+语法：GRANT rights ON db.table TO user@ip_address IDENTIFIED BY 'pass' WITH GRANT OPTION ;
+    
+    rights:select,insert,update,delete,create,drop,index,alter,grant,references,reload,shutdown,process,file等14个权限
+
+    db.table 授权用户可以访问的数据库及表，例如db.*,*.*
+
+    IDENTIFIED BY :设定访问密码
+
+    WITH GRANT OPTION: 带授权，即，可以将rights再授予其他用户
 
 例子：
-mysql>grant select,update,insert,delete on notebook.* to 'zaifeng'@'localhost';
+
+    mysql>grant select,update,insert,delete on notebook.* to 'zaifeng'@'localhost';
 
 2)收回权限
 
