@@ -28,27 +28,41 @@ WITH GRANT OPTION: 带授权，即，可以将rights再授予其他用户
 mysql>grant select,update,insert,delete on notebook.* to 'zaifeng'@'localhost';
 
 2)收回权限
+
 语法：REVOKE privilege ON db.table FROM 'username'@'host';
+
 例子: REVOKE SELECT ON *.* FROM 'zhangsan'@'%';
 
 ###3.密码修改
+
 1)使用mysqladmin语法：mysqladmin -u用户名 -p旧密码 password 新密码
+
 例如：#mysqladmin -u root -p 123 password 456；
 
 2)直接修改user表的用户口令：
+
 语法：update mysql.user set password=password('newpass') where user="user" and host="hostorip";
+
 实例：mysql>update user set password=password('123456') where user='root';
 
 3)使用SET PASSWORD语句修改密码
+
 语法：SET PASSWORD FOR 'username'@'host' = PASSWORD('newpassword');
+
 如果是当前登陆用户用SET PASWORD = PASSWORD("newpassword");
+
 实例：
+
 mysql>set password for root@'localhost'=password('');
 
 ###4.删除用户
+
 语法: DELETE FROM user WHERE user = "user_name" and host = "host_name" ;
+
 实例：
+
 mysql>delete from user where user='u_note' and host='localhost';
 
 ###5.权限刷新
+
 mysql>flush privileges;
