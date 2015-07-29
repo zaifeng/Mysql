@@ -21,3 +21,11 @@
 +------------+
 
 ###修改用户密码
+
+
+
+###创建索引的两种方式
+
+1.create index 'index_name' on 'table_name' ('column_list')
+
+2.alter 'table_name' add index ( 'column_list' )
