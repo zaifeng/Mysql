@@ -29,3 +29,14 @@
 1.create index 'index_name' on 'table_name' ('column_list')
 
 2.alter 'table_name' add index ( 'column_list' )
+
+
+
+
+###添加列
+
+ALTER TABLE table_name ADD COLUMN new_column TINYINT(4) NOT NULL DEFAULT 1 AFTER column2;
+
+###改变列
+
+ALTER TABLE table_name CHANGE `column` `new_column` TYPE DEFAULT 1 NOT NULL COMMENT '公告优先级';
