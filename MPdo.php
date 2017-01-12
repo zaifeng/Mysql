@@ -89,24 +89,43 @@ class MPdo
     
     /**
      * Excutes a sql statement
+     *
+     * @desc for Select only
      * @param  string   $sql
      * @return  a result set as a PDOStatement object    
      */
     public function query($sql)
     {
-        //TODO
+        $result = array() ;
+        $dbh    = $this->getDbh(false) ;
+        //Prepare Sql excute
+        try {
+            $sth = $dbh->prepare($sql);
+            $sth->execute() ;
+            $result = $sth->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            exit('PDO execute failed:'.$e->getMessage()) ;
+        }
+        return $result ;
     }
 
     /**
      * Execute a sql and return affect rows
      *
-     * @desc    for update
+     * @desc    for Insert/Delete/Update
      * @param   string  $sql
      * @return  int     affect rows
      */
     public function exec($sql)
     {
-        //TODO
+        $affectRows = 0 ;
+        $dbh = $this->getDbh(true) ;
+        try {
+            $affectRows = $this->exec($sql) ;
+        } catch (PDOException $e) {
+            exit('PDO exec failed:'.$e->getMessage()) ;
+        }
+        return $affectRows ;
     }
      
     /**
@@ -118,7 +137,7 @@ class MPdo
      * @param  string $orderby 
      * @return array       
      */
-    public function select($table, $fields , $conds, $orderby='', $pages=array())
+    public function select($table, $fields, $conds, $orderby='', $pages=array())
     {
         $fconds = $forder = $flimit = '' ;
         //Format sql conditions
@@ -139,11 +158,8 @@ class MPdo
             $offset = ($pages['page'] - 1) * $pages['pagesize'] ;
             $flimit = "limit $offset, ${pages['pagesize']}" ;
         }
-        $dbh = $this->getDbh(false) ;
-        //Prepare Sql excute
-        $sth = $dbh->prepare("select $fields from $table where 1=1 $fconds $forder $flimit");
-        $sth->execute() ;
-        return $sth->fetchAll(PDO::FETCH_ASSOC);
+        $selectSql = "select $fields from $table where 1=1 $fconds $forder $flimit" ;
+        return $this->query($selectSql) ;
     }
     
     /**
@@ -154,10 +170,9 @@ class MPdo
      */
     public function insert($table, $set)
     {
-        $dbh = $this->getDbh(true) ;
         $fset = $this->formatSet($set) ;
-        $dbh->query("insert into $table set $fset") ;
-        return $dbh->lastInsertId();
+        $insertSql = "insert into $table set $fset" ;
+        return $this->exec($insertSql) ;
     }
      
     /**
@@ -170,13 +185,13 @@ class MPdo
      */
     public function update($table, $set, $cond="")
     {
-        $dbh  = $this->getDbh(true) ;
-        $fset = $this->formatSet($set) ;
         $fcond= '' ;
+        $fset = $this->formatSet($set) ;
         if(!empty($cond)) {
             $fcond = ' and '.$this->formatSet($cond , ' and ');
         }
-        return $dbh->exec("update $table set $fset where 1=1 $fcond");
+        $updateSql = "update $table set $fset where 1=1 $fcond" ;
+        return $this->exec($updateSql) ;
     }
     
     /**
@@ -192,9 +207,9 @@ class MPdo
         if(empty($cond)) {
             return false ;
         }
-        $dbh  = $this->getDbh(true) ;
         $fcond = ' and ' . $this->formatSet($cond , ' and ');
-        return $dbh->exec("delete from $table where 1=1 $fcond");
+        $deleteSql = "delete from $table where 1=1 $fcond" ;
+        return $this->exec($deleteSql) ;
     }
 
     /**
