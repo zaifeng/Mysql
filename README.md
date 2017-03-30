@@ -1,3 +1,3 @@
-#Mysql Study Note
+## Mysql Study Note
 
-review mysql database acknowlege
+review mysql database knowlege
