@@ -5,17 +5,21 @@
 class MPdo
 {
     /**
-     * configure file
+     * Configure file variables
      * @var array
      */
     private $master_conf ;
     private $slave_conf ;
     
+    //PDO instance
     protected $master ;
     protected $slave ;
+
     /**
-     * Construct function 
+     * Construct function just set config file
+     *
      * @param mixed $config database config
+     * @return null
      */
     function __construct($config){
         $this->master_conf  = $config['master'] ;
@@ -33,12 +37,13 @@ class MPdo
      */
     private function connect($db_conf)
     {
-        //pdo setting 
+        if(!isset($db_conf['charset'])) {
+            $db_conf['charset'] = 'utf8' ;
+        }
+        //pdo setting
         $dsn = sprintf("mysql:host=%s;dbname=%s;port=%s;charset=%s",$db_conf['host'],$db_conf['database'],$db_conf['port'],$db_conf['charset']) ;
-        $user= $db_conf['user'] ;
-        $pass= $db_conf['pass'] ;
         try {
-            $dbh = new PDO($dsn, $user, $pass) ;
+            $dbh = new PDO($dsn, $db_conf['user'], $db_conf['pass']) ;
             $dbh->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
             $dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         } catch (PDOException $e) {
@@ -55,6 +60,7 @@ class MPdo
      */
     public function getDbh($is_master = false)
     {
+        //while slave conf is not set use master instead
         if($is_master || empty($this->slave_conf)) {
             if(is_object($this->master) && $this->master->query('do 1')) {
                 return $this->master ;
@@ -140,30 +146,77 @@ class MPdo
     public function select($table, $fields, $conds, $orderby='', $pages=array())
     {
         $fconds = $forder = $flimit = '' ;
-        //Format sql conditions
+        //Format fields
         $fields = $this->formatSet($fields) ;
+        //format conditions
         if(!empty($conds)) {
             $fconds = 'and '.$this->formatSet($conds,' and ') ;
         }
-        //Get orderby condition
+        //Format order
         if(!empty($orderby)) {
             $order = $this->formatOrder($orderby) ;
             $forder = 'order by' . $order ;
         }
-        //Get data of pages
+        //Format pages
         if(!empty($pages) && isset($pages['page'])) {
-            if(!isset($pages['pagesize'])) {
-                $pages['pagesize'] = 100 ;
+            if(!isset($pages['size'])) {
+                $pages['size'] = 100 ;
             }
-            $offset = ($pages['page'] - 1) * $pages['pagesize'] ;
-            $flimit = "limit $offset, ${pages['pagesize']}" ;
+            $offset = ($pages['page'] - 1) * $pages['size'] ;
+            $flimit = "limit $offset, ${pages['size']}" ;
         }
         $selectSql = "select $fields from $table where 1=1 $fconds $forder $flimit" ;
         return $this->query($selectSql) ;
     }
     
     /**
+     * Get Single Record From DB
+     *
+     * @desc be sure there is only one record, or the first one will be choosed
+     * @param  string   $table      table name
+     * @param  mixed    $fields     select fields
+     * @param  mixed    $conds      select conditions
+     * @return array
+     */
+    public function getOne($table, $fields , $conds)
+    {
+        $formatCond = '' ;
+        $res = array() ;
+        $fields = $this->formatSet($fields);
+        if(!empty($conds)) {
+            $formatCond = ' and '.$this->formatSet($conds, ' and ') ;
+        }
+        $oneSql = "select $fields from $table where 1=1 $formatCond" ;
+        $result = $this->query($oneSql) ;
+        if(!empty($result)) {
+            $res = $result[0] ;
+        }
+        return $res ;
+    }
+
+    /**
+     * Get all records match the condition
+     * 
+     * @param  string   $table  
+     * @param  mixed    $fields 
+     * @param  mixed    $conds
+     * @return array
+     */
+    public function getAll($table, $fields, $conds)
+    {
+        $formatCond = '' ;
+        $result     = array() ;
+        $fields     = $this->formatSet($fields) ;
+        if(!empty($conds)) {
+            $formatCond = ' and '.$this->formatSet($conds, ' and ') ;
+        }
+        $allSql = "select $fields from $table where 1=1 $formatCond" ;
+        return $this->query($allSql) ;
+    }
+
+    /**
      * Insert record into table (Single)
+     * 
      * @param   string  $table
      * @param   mixed   $set
      * @return  int     last_insert_id
@@ -172,7 +225,14 @@ class MPdo
     {
         $fset = $this->formatSet($set) ;
         $insertSql = "insert into $table set $fset" ;
-        return $this->exec($insertSql) ;
+        $dbh  = $this->getDbh(true) ;
+        try {
+            $sth = $dbh->prepare($insertSql);
+            $sth->execute() ;
+            return $dbh->lastInsertId() ;
+        } catch (PDOException $e) {
+            exit('PDO insert record failed:'.$e->getMessage()) ;
+        }
     }
      
     /**
@@ -257,4 +317,14 @@ class MPdo
         return $order ;
     }
 
+    public function __destruct()
+    {
+        if(is_object($this->master)) {
+            $this->master = null ;
+        }
+
+        if(is_object($this->slave)) {
+            $this->slave  = null ;
+        }
+    }
 }
